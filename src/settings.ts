@@ -9,12 +9,47 @@ export namespace Settings {
     });
 
     await joplin.settings.registerSettings({
+      bucketName: {
+        value: "",
+        type: SettingItemType.String,
+        section: "backupSection",
+        public: true,
+        label: "Bucket name",
+      },
+      backupsFolder: {
+        value: "Backups",
+        type: SettingItemType.String,
+        section: "backupSection",
+        public: true,
+        label: "Backups folder",
+      },
       path: {
         value: "",
         type: SettingItemType.String,
         section: "backupSection",
         public: true,
         label: "Backup path",
+      },
+      s3Endpoint: {
+        value: "",
+        type: SettingItemType.String,
+        section: "backupSection",
+        public: true,
+        label: "S3 Endpoint",
+      },
+      s3Key: {
+        value: "",
+        type: SettingItemType.String,
+        section: "backupSection",
+        public: true,
+        label: "S3 Key",
+      },
+      s3Secret: {
+        value: "",
+        type: SettingItemType.String,
+        section: "backupSection",
+        public: true,
+        label: "S3 Secret",
       },
       singleJex: {
         value: false,
