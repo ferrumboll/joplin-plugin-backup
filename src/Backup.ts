@@ -6,6 +6,7 @@ import backupLogging from "electron-log";
 import * as fs from "fs-extra";
 import { sevenZip } from "./sevenZip";
 import * as moment from "moment";
+import * as AWS from "aws-sdk";
 
 class Backup {
   private errorDialog: any;
@@ -22,6 +23,11 @@ class Backup {
   private compressionLevel: number;
   private singleJex: boolean;
   private backupSetName: string;
+  private bucketName: string;
+  private backupsFolder: string;
+  private s3Endpoint: string;
+  private s3Key: string;
+  private s3Secret: string;
 
   constructor() {
     this.log = backupLogging;
@@ -203,6 +209,13 @@ class Backup {
   public async loadSettings() {
     this.log.verbose("loadSettings");
     await this.loadBackupPath();
+
+    this.bucketName = await joplin.settings.value("bucketName")
+    this.s3Endpoint = await joplin.settings.value("s3Endpoint")
+    this.s3Key = await joplin.settings.value("s3Key")
+    this.s3Secret = await joplin.settings.value("s3Secret")
+    this.backupsFolder = await joplin.settings.value("backupsFolder")
+
     this.backupRetention = await joplin.settings.value("backupRetention");
 
     this.zipArchive = await joplin.settings.value("zipArchive");
@@ -521,6 +534,7 @@ class Backup {
         notebooks.ids,
         path.join(this.activeBackupPath, "all_notebooks.jex")
       );
+      await this.sendToB2(this.activeBackupPath);
     } else {
       this.log.info("Export each notbook as JEX backup");
       for (const folderId of notebooks.ids) {
@@ -536,11 +550,61 @@ class Backup {
             folderId,
             path.join(this.activeBackupPath, notebookFile)
           );
+          await this.sendToB2(this.activeBackupPath);
         } else {
           this.log.verbose(
             `Skip ${notebooks.info[folderId]["title"]} (${folderId}) since no notes in notebook`
           );
         }
+      }
+    }
+  }
+
+  private async getS3SavePath(): Promise<string> {
+
+    function pad2(n) {
+      return (n < 10 ? '0' : '') + n;
+    }
+    
+    const backupDate = new Date();
+    const month = pad2(backupDate.getMonth()+1);//months (0-11)
+    const day = pad2(backupDate.getDate());//day (1-31)
+    const year = backupDate.getFullYear();
+    const hour = pad2(backupDate.getHours())
+    return this.backupsFolder + "/" + year + "-" + month + "-" + day + "/" + hour
+
+  }
+  
+  private async sendToB2(
+    directory: string
+  ) {
+    const savePath = await this.getS3SavePath()
+  
+    // Create an S3 client
+    var credentials = new AWS.SharedIniFileCredentials({profile: 'b2'});
+    AWS.config.credentials = credentials;
+    var ep = new AWS.Endpoint(this.s3Endpoint);
+    var s3 = new AWS.S3({
+      endpoint: ep,
+      accessKeyId: this.s3Key, 
+      secretAccessKey: this.s3Secret, 
+    });
+    var files = fs.readdirSync(directory);
+    let bucketName = this.bucketName
+    for(let file of files) {
+      if(file.endsWith(".jex")) {
+      this.log.info("Uploading " + file)
+      const fileSavePath = savePath + "/" + file;
+      const filePath = path.join(directory, file);
+      var params = {Bucket: bucketName, Key: fileSavePath, Body: fs.readFileSync(filePath)};
+      this.log.info(params)
+      let log = this.log
+      s3.putObject(params, function(err, data) {
+        if (err)
+        log.info(err)
+        else
+        log.info("Successfully uploaded data to " + bucketName + "/" + fileSavePath);
+        });
       }
     }
   }
