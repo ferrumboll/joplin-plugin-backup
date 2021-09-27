@@ -1,17 +1,14 @@
-# Joplin Backup Plugin
+# Joplin S3 Backup Plugin
 
-A plugin to extend Joplin with a manual and automatic backup function.
+A little quick S3 setup using https://github.com/JackGruber/joplin-plugin-backup
+
+MY S3 IMPLEMENTATION IS VERY UNFINISHED AND ROUGH.
+
+A plugin to extend Joplin with a manual and automatic backup function. (With S3 functionality)
 
 <img src=img/main.jpg>
 
 ## Installation
-
-### Automatic
-
-- Go to `Tools > Options > Plugins`
-- Search for `Simple Backup`
-- Click Install plugin
-- Restart Joplin to enable the plugin
 
 ### Manual
 
