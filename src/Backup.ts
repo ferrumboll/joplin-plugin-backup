@@ -534,7 +534,7 @@ class Backup {
         notebooks.ids,
         path.join(this.activeBackupPath, "all_notebooks.jex")
       );
-      await this.sendToB2(this.activeBackupPath);
+      await this.sendToS3(this.activeBackupPath);
     } else {
       this.log.info("Export each notbook as JEX backup");
       for (const folderId of notebooks.ids) {
@@ -550,7 +550,7 @@ class Backup {
             folderId,
             path.join(this.activeBackupPath, notebookFile)
           );
-          await this.sendToB2(this.activeBackupPath);
+          await this.sendToS3(this.activeBackupPath);
         } else {
           this.log.verbose(
             `Skip ${notebooks.info[folderId]["title"]} (${folderId}) since no notes in notebook`
@@ -575,7 +575,7 @@ class Backup {
 
   }
   
-  private async sendToB2(
+  private async sendToS3(
     directory: string
   ) {
     const savePath = await this.getS3SavePath()
